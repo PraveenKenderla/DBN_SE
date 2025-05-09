@@ -66,7 +66,7 @@ ___
 
     SUB_TREE: renv -------------------- renv::package is used to store libraries and dependencies and code reproduction
     renv
-    ------(contents removed) ---------- (Only removed from directory tree: because of large number of files)
+    └── activate.R ---------- can be used to activate this project through renv package
     ----- renv.lock  ------------------ lock file. Please check the renv R package documentation on how to reactivate the R project.
 
 ```
