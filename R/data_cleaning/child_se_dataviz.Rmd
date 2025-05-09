@@ -1,0 +1,327 @@
+---
+title: "DBN: SE Data visualization"
+author: "Praveen Kenderla"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    css: !expr here::here('R', 'css', 'style.css')
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(dev.args = list(type = "cairo"))
+
+```
+
+
+## Loading Libraries
+```{r libraries, message=FALSE}
+# 1. Checks if is a pacman library installed if not installs it
+if (!requireNamespace("pacman")) install.packages("pacman")
+
+# 2. Uploads all the libraries using pacman package
+pacman::p_load(ggplot2, dplyr, purrr, tibble, tidyr, lme4, lmerTest, 
+               psych, Cairo, ggh4x, gridExtra, gtable, grid, gt, here, 
+               extrafont, conflicted, rlang, systemfonts)
+
+#from here on prefers dplyr filter if there is a conflict with filter function
+conflict_prefer("filter", "dplyr")
+
+# loadfonts(device = "win")
+# fonts()
+```
+
+## Anti-aliasing for windows
+```{r anti-aliasing, message=FALSE, results='hide'}
+# code taken from this place: https://github.com/rstudio/rstudio/issues/2142
+trace(grDevices:::png, quote({
+  if (missing(type) && missing(antialias)) {
+    type <- "cairo-png"
+    antialias <- "subpixel"
+  }
+}), print = FALSE)
+```
+
+## Load source files
+```{r loading_source_files, message=FALSE}
+# Loads the primary data cleaning script; "here" makes rproj as absolute path;
+source(here("R/data_cleaning/child_se_datacleaning.R"))
+
+# Load data viz functions;
+source(here("R/functions/data_viz_function_list.R"))
+```
+
+## Table
+### 1. Table data preparation
+```{r table-prep, message=FALSE}
+#Summary of responses: gives averages response for each category:
+df_child_avg <- df_child_analysis %>%
+  group_by(participant_ID, country, category, child_age_years) %>%
+  summarise(avgScore = mean(response, na.rm = TRUE), n = n()) %>% 
+  ungroup()
+  
+### Permutations without repetitions: 
+# Permutations without repetition (n=3, r=3)
+# Using Items: a,b,c
+# List has 6 entries.
+# {a,b,c} {a,c,b} {b,a,c} {b,c,a} {c,a,b} {c,b,a}
+# G>R>W; G>W>R; R>G>W; 
+# R>W>G; W>G>R; W>R>G;
+
+child_avg_table <- df_child_avg %>% 
+  pivot_wider(names_from = category, values_from = avgScore) %>% 
+  mutate(G_R_W = case_when(
+    gender > religion & religion > wealth ~ "GRW",
+    gender > wealth & wealth > religion ~ "GWR",
+    religion > gender & gender > wealth ~ "RGW",
+    
+    religion > wealth & wealth > gender ~ "RWG",
+    wealth > gender & gender > religion ~ "WGR",
+    wealth > religion & religion > gender ~ "WRG",
+    gender == religion & religion == wealth ~ "All_equal",
+    
+    gender > religion & religion == wealth ~ "G>R=W",
+    religion > wealth & religion == gender ~ "R>W=G",
+    wealth > gender & gender == wealth ~ "W>G=G",
+    TRUE ~ "Other"
+  )
+  ) %>% group_by(country,G_R_W) %>% 
+  summarise(total = n()) %>% 
+  mutate(percentage_kids = (round((total / sum(total)*100), 2))) %>%
+  select(-total) %>% 
+  pivot_wider(names_from = G_R_W, values_from = percentage_kids) %>% 
+  mutate(total = round(sum(GRW, GWR, RGW, RWG, WGR, WRG,Other, All_equal,
+                           `G>R=W`, `R>W=G`,
+                           na.rm=TRUE),0)) %>% 
+  relocate(c(`G>R=W`, `R>W=G`, All_equal, Other), .after=WRG) 
+# relocate(All_equal, .after=WRG)
+#  mutate(total_per = sum(Other, gender_over_all, religion_over_all, wealth_over_all, ## # g>r<=w, r>w<=g, na.rm=T))
+
+child_avg_table[is.na(child_avg_table)] <- 0
+
+#colnames(child_avg_table)
+#adding this because there are no W>R=G values as of now but we still want to 
+# show that in the table for clarity purpose. But change this if there are 
+# any responses for the W>R=G combination!
+child_avg_table  <- child_avg_table %>% 
+  mutate(`W>R=G` = 0) %>% 
+  relocate(`W>R=G`, .after = `R>W=G`)
+  
+```
+
+### 2. Constructing table for average essentialism scores
+```{r summary-table-figure, message=FALSE}
+# adding percentage symbols to the data
+df_child_table <- child_avg_table %>%
+  mutate(across(everything(), ~ paste0(., "%"))) %>%
+  ungroup() %>%
+  mutate(country = as.character(country))
+
+child_tbl <- gt(df_child_table) %>%
+  tab_spanner(label = "Gender greater",
+              columns = c(GRW, GWR, `G>R=W`),
+              id = "S1") %>%
+  tab_spanner(label = "Religion greater",
+              columns = c(RGW, RWG, `R>W=G`),
+              id = "S2") %>%
+  tab_spanner(label = "Wealth greater",
+              columns = c(WGR, WRG, `W>R=G`),
+              id = "S3") %>%
+  # cols_label(country = "Country") %>%
+  tab_style(
+    style = cell_text(
+      size = "smaller",
+      weight = "bold",
+      transform = "uppercase"
+    ),
+    locations = list(cells_body(columns = country), cells_column_labels())
+  ) %>%
+  tab_style(
+    style = cell_text(size = "smaller", weight = "bold"),
+    locations = list(cells_column_spanners(everything()))
+  ) %>%
+  tab_style(
+    style = cell_borders(
+      sides = c("bottom"),
+      color = "#000000",
+      style = "solid",
+      weight = px(2)
+    ),
+    locations = list(
+      cells_column_labels(),
+      cells_column_spanners(everything()),
+      cells_body(everything())
+    )
+  ) %>%
+  tab_style(
+    style = cell_borders(
+      sides = c("left", "right"),
+      color = "black",
+      weight = px(2)
+    ),
+    locations = list(cells_body(columns = 1), 
+                     cells_column_labels(columns = c(country)))
+  ) %>%
+  tab_style(
+    style = cell_borders(
+      sides = c("right"),
+      color = "black",
+      weight = px(2)
+    ),
+    locations = list(cells_body(columns = total), 
+                     cells_column_labels(columns = c(total)))
+  ) %>%
+  opt_stylize(style = 1, color = "gray") %>%
+  opt_horizontal_padding(scale = 2) %>%
+  cols_align(align = c("center"), columns = -country) %>%
+  # cols_align(align = "left", columns = 1) %>%
+  opt_vertical_padding(scale = 1) %>%
+  tab_options(
+    column_labels.padding = px(1),
+    column_labels.background.color = "#FFEFD550",
+    column_labels.font.size = px(10)
+  ) %>%
+  tab_header(title = "Children response patterns compared between social categories for each country", 
+             subtitle = "Essentialism average percentages") %>%
+  # opt_align_table_header(align = "left") %>%
+  tab_options(
+    heading.background.color = "#FFEFD590",
+    heading.align = "left",
+    heading.padding = px(10),
+    heading.padding.horizontal = px(2),
+    heading.title.font.size = px(18)
+  ) %>%
+  tab_style(style = cell_borders(
+    sides = c("left", "right"),
+    color = "black",
+    weight = px(2)
+  ),
+  locations = cells_title()) %>%
+  # opt_table_font(
+  #   font = list(
+  #     google_font(name = "Merriweather"),
+  #     "Cochin", "serif"
+  #   )) %>%
+  tab_style(cell_text(font = list(google_font(name = "Lexend Deca"), "serif")), locations = cells_title()) %>%
+  tab_style(cell_text(font = list(google_font(name = "Lexend Deca"), "serif")),
+            locations = list(cells_body(), cells_column_labels())) %>%
+  tab_style(cell_text(size = px(16)), locations = list(cells_column_labels()))
+
+child_tbl %>% tab_options(table.width = "100%",
+                          table.align = "center",
+                          table.layout = "fixed")
+
+#save the table----
+#gtsave(b_tbl, "patterns_table.html")
+
+```
+
+## Plots at item level
+### 1. Born item
+> ***Q. "Are people born that way? Like, [OUTGROUP] are born [OUTGROUP] and [INGROUP] are born [INGROUP]? "***
+
+```{r message=FALSE,fig.width=12, fig.height=8, fig.fullwidth = TRUE}
+# These plots are according to the analysis representation 
+# where we test the for each item!
+
+# omitting NA rows:
+df_child_analysis <- na.omit(df_child_analysis)
+
+#Plot for each item----
+#Born item:
+born_plot <- plot_making(
+  df_child_analysis,
+  child_age_years,
+  response,
+  filter_var = (df_child_analysis$item == "born"),
+  color_variable = category,
+  facet_var = country,
+  title_name = "BORN"
+) + plot_theme(base_family = "Roboto") 
+
+born_plot
+
+```
+
+### 2. Internal Item
+> ***Q. "Is it possible to tell whether a person is [OUTGROUP] or [INGROUP] just by looking inside their body, like their blood and bones?"***
+
+```{r message=FALSE,fig.width=12, fig.height=8, fig.fullwidth = TRUE}
+#Internal item:
+internal_plot <- plot_making(
+  df_child_analysis,
+  child_age_years,
+  response,
+  filter_var = (df_child_analysis$item == "internal"),
+  color_variable = category,
+  facet_var = country,
+  title_name = "INTERNAL"
+) + plot_theme(base_family = "Roboto")
+
+internal_plot
+```
+
+### 3. Souls Item
+> ***Q. "Are [OUTGROUP] people’s souls different from [INGROUP] people’s souls? "***
+
+```{r message=FALSE,fig.width=12, fig.height=8, fig.fullwidth = TRUE}
+#Souls item:
+souls_plot <- plot_making(
+  df_child_analysis,
+  child_age_years,
+  response,
+  filter_var = (df_child_analysis$item == "souls"),
+  color_variable = category,
+  facet_var = country,
+  title_name = "SOULS"
+) + plot_theme(base_family = "Roboto")
+
+souls_plot
+```
+
+### 4. Change Item:
+> ***Q. "Is it possible for [OUTGROUP] to become [INGROUP]?"***
+
+```{r message=FALSE,fig.width=12, fig.height=8, fig.fullwidth = TRUE}
+#Change item:
+change_plot <- plot_making(
+  df_child_analysis,
+  child_age_years,
+  response,
+  filter_var = (df_child_analysis$item == "change"),
+  color_variable = category,
+  facet_var = country,
+  title_name = "CHANGE"
+) + plot_theme(base_family = "Roboto")
+
+change_plot
+```
+
+## Save the plots
+```{r save-plots}
+### Uncomment this if you plan to save the figures!
+# fig_output_path <- here::here("outputs/figures/")
+# plot_names <-c("born_plot", "internal_plot",
+#                 "souls_plot", "change_plot")
+# 
+# 
+# for (name in plot_names){
+#   plot_name <- paste0(fig_output_path, "/",name, ".png")
+#   
+#   #Checks if the exact file name exists in output figures folder and removes it!
+#   if(file.exists(plot_name)) {
+#     file.remove(plot_name)
+#   }
+#   
+#   #saves the plots in the figures folder!
+#   ggsave(get(name), filename = paste0(name, ".png"), 
+#          path = fig_output_path,
+#          width = 12, height = 8)
+# }
+
+```

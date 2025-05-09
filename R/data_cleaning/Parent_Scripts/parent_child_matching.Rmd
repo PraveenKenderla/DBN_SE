@@ -1,0 +1,203 @@
+---
+title: "parent_child_matching"
+author: "Praveen Kenderla"
+date: "`r format(Sys.time(),'%a %b %d %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    css: style.css
+    theme: paper
+  geometry: margin=1in
+  pdf_document:
+    toc: true
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Libraries
+```{r libraries}
+# Load libraries!
+pacman::p_load(tidyverse, conflicted, qpcR)
+
+# Conflict preferences
+conflict_prefer("filter", "dplyr")
+conflict_prefer("select", "dplyr")
+
+
+## renv::update()
+## renv::snapshot()
+
+```
+
+
+## Function to clean the data!
+```{r}
+## Function to check matches between child and parent participantIDS for a country
+## will give output of three columns: 
+## matched child parent ids, unmatched child Ids, unmatched parent ids for a country
+
+matchIDs <- function(childdata, parentdata, country, match_by){
+  
+  # Get the matches between parent and child data for a country
+  matched <- inner_join(childdata, parentdata, by = match_by) %>% 
+    select(participant_ID)
+  colnames(matched) <- paste0("matched_CP_",country)
+  
+  # if you want to retain more than participant ID you can change the colnames
+  #colnames(matched)[colnames(matched)=="participant_ID"] <- paste0(matched_CP_",country)
+  # Also remove select eh!
+  
+  # get unmatched Child participant_IDs for a country
+  umChild <- anti_join(
+    childdata, parentdata, by = match_by) %>% 
+    select(participant_ID)
+  colnames(umChild) <- paste0("unmatched_Child_", country)
+  #return(umChild)
+  
+  # get unmatched Parent participant_IDs for a country
+  umParent <- anti_join(
+    parentdata, childdata, by = match_by) %>% 
+    select(participant_ID)
+  colnames(umParent) <- paste0("unmatched_Parent_", country)
+  #return(umParent)
+  
+  #column bind all eh!
+  fulldf <- qpcR:::cbind.na(matched,umChild,umParent)
+  return(fulldf)
+  
+}
+
+```
+
+
+## Generate matching and not matching rows
+### China
+```{r}
+
+childChina <- read.csv("D:/DBN_SE_Paper/Data/Child_protocol/DBN_W1_CP_China_Unaffiliated_Essentialism_task.csv")
+  
+parentChina <- read.csv("D:/DBN_SE_Paper/Data/Parent_protocol/DBN_W1_PP_China_Unaffiliated_Demographics.csv")
+
+China_Unaffiliated_IDs <- matchIDs(childChina, parentChina, "China", "participant_ID")
+
+```
+
+
+### Greece
+```{r}
+## 
+childGreece <- read.csv("D:/DBN_SE_Paper/Data/Child_protocol/DBN_W1_CP_Greece_Christian_Essentialism_task.csv")
+
+parentGreece <- read.csv("D:/DBN_SE_Paper/Data/Parent_protocol/DBN_W1_PP_Greece_Christian_Orthodox_Demographics.csv")
+
+## Check this eh: 
+## . and space after!
+parentGreece <- parentGreece %>% 
+  mutate(participant_ID = gsub("\\s+", "", participant_ID), # cannot remove spaces after digits! need more
+         participant_ID = gsub("\\.", "", participant_ID))
+
+# For whatever reasons this ID won't match because of the space at the end of digits:
+# so changing it manually!
+parentGreece$participant_ID[11] <- "PPUD1016"
+
+Greece_Orthodox_IDs <- matchIDs(childGreece, parentGreece, "Greece", "participant_ID")
+  
+```
+
+
+### Indonesia
+```{r}
+## Do not match! need family ID!
+childIndonesiaChristian <- read.csv("D:/DBN_SE_Paper/Data/Child_protocol/DBN_W1_CP_Indonesia_Christian_Essentialism_task.csv")
+parentIndonesiaChristian <- read.csv("D:/DBN_SE_Paper/Data/Parent_protocol/DBN_W1_PP_Indonesia_Christian_Demographics.csv")
+
+
+
+childIndonesia_Muslim <- read.csv("D:/DBN_SE_Paper/Data/Child_protocol/DBN_W1_CP_Indonesia_Muslim_Essentialism_task.csv")
+parentIndonesia_Muslim <- read.csv("D:/DBN_SE_Paper/Data/Parent_protocol/DBN_W1_PP_Indonesia_Muslim_Demographics.csv")
+
+```
+
+
+### Northern Ireland
+```{r}
+## Catholic
+childNI_Catholic <- read.csv("D:/DBN_SE_Paper/Data/Child_protocol/DBN_W1_CP_NI_Catholic_Essentialism_task.csv")
+parentNI_Catholic <- read.csv("D:/DBN_SE_Paper/Data/Parent_protocol/DBN_W1_PP_NI_Catholic_Demographics.csv")
+
+NI_Catholic_IDs <- matchIDs(childNI_Catholic, parentNI_Catholic, "NI", "participant_ID")
+
+
+## Protestant
+childNI_Protestant <- read.csv("D:/DBN_SE_Paper/Data/Child_protocol/DBN_W1_CP_NI_Protestant_Essentialism_task.csv")
+parentNI_Protestant <- read.csv("D:/DBN_SE_Paper/Data/Parent_protocol/DBN_W1_PP_NI_Protestant_Demographics.csv")
+
+NI_Protestant_IDs <- matchIDs(childNI_Protestant, parentNI_Protestant, "NI", "participant_ID")
+
+```
+
+
+### India
+```{r}
+##
+
+
+```
+
+
+### ROI
+```{r}
+## Catholic
+childROI_Catholic <- read.csv("D:/DBN_SE_Paper/Data/Child_protocol/DBN_W1_CP_ROI_Protestant_Essentialism_task.csv")
+parentROI_Catholic <- read.csv("D:/DBN_SE_Paper/Data/Parent_protocol/DBN_W1_PP_ROI_Catholic_Demographics.csv")
+
+ROI_Catholic_IDs <- matchIDs(childROI_Catholic, parentROI_Catholic, "ROI", "participant_ID")
+
+
+## Protestant
+childROI_Protestant <- read.csv("D:/DBN_SE_Paper/Data/Child_protocol/DBN_W1_CP_ROI_Protestant_Essentialism_task.csv")
+parentROI_Protestant <- read.csv("D:/DBN_SE_Paper/Data/Parent_protocol/DBN_W1_PP_ROI_Protestant_Demographics.csv")
+ROI_Protestant_IDs <- matchIDs(childROI_Protestant, parentROI_Protestant, "ROI", "participant_ID")
+
+```
+
+
+### Uganda (Participant initials as participant ID! needs correction in DD I guess)
+```{r}
+## Anglican (No Parent participant IDs!!)
+childUganda_Anglican <- read.csv("D:/DBN_SE_Paper/Data/Child_protocol/DBN_W1_CP_Uganda_Anglican_Essentialism_task.csv")
+parentUganda_Anglican <- read.csv("D:/DBN_SE_Paper/Data/Parent_protocol/DBN_W1_PP_Uganda_Anglican_Demographics.csv")
+
+
+## Catholic
+childUganda_Catholic <- read.csv("D:/DBN_SE_Paper/Data/Child_protocol/DBN_W1_CP_Uganda_Catholic_Essentialism_task.csv")
+parentUganda_Catholic <- read.csv("D:/DBN_SE_Paper/Data/Parent_protocol/DBN_W1_PP_Uganda_Catholic_Demographics.csv")
+
+```
+
+
+### USA
+```{r}
+##
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+

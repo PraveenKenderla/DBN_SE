@@ -1,0 +1,36 @@
+h1,h2,h3, h4, body{
+  text-align: left;
+  font-family: Source Sans Pro Web,Helvetica Neue,Bahnschrift,Roboto,Noto Sans,sans-serif;
+}
+
+h1{
+  font-size: 3em;
+}
+
+h2{
+  font-size: 2em;
+}
+
+h3{
+  font-size: 1.5em;
+}
+
+h4{
+  font-size: 1.25em;
+}
+
+#TOC{
+  font-size: 1em;
+}
+
+body{
+  font-size: 12px;
+}
+
+blockquote {
+  font-size: 12px;
+}
+
+.list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
+  background-color: #321414;
+}

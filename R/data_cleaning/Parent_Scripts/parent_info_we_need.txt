@@ -1,0 +1,58 @@
+# 
+# [1] "participant_ID"
+# [~] "caregiver1_religionopen"                         
+#  [64] "caregiver1_religionopen_present_text"            
+#  [65] "caregiver1_religionopen_past_text"               
+#  [66] "caregiver1_religionopen_other_text"              
+#  [67] "caregiver1_atheist"                              
+#  [68] "caregiver1_religionchecklist"                    
+#  [69] "caregiver1_religionchecklist_christianother_text"
+#  [70] "caregiver1_religionchecklist_jewishother_text"   
+#  [71] "caregiver1_religionchecklist_muslimother_text"   
+#  [72] "caregiver1_religionchecklist_other_text"  
+#  
+#  
+#  ] "caregiver2"                                      
+# [136] "caregiver2_otherparent"                          
+# [137] "caregiver2_grandparent"                          
+# [138] "caregiver2_sibling"                              
+# [139] "caregiver2_otherfamily"                          
+# [140] "caregiver2_nanny"                                
+# [141] "caregiver2_other"                                
+# [142] "caregiver2_noone"
+#  "caregiver2_gender"                               
+# [145] "caregiver2_gender_other_text" 
+# 
+# Q9.2, 9.3, 9.6, 
+#  "family_ladder"                                   
+# [237] "family_lostincome"
+# [248] "family_endofmonth"
+# 
+# 
+# 
+# Q10.2, Q10.6, Q10.7, Q10.8, 
+# 
+# caregiver1_relationshiptochild
+# caregiver1_relationshiptochild_text
+# 
+# 
+# Q12.1,2,3!
+# [363] "child_practices_religious_public"                
+# [364] "child_practices_religious_private"               
+# [365] "child_practices_spiritual_public"                
+# [366] "child_practices_spiritual_private"               
+# [367] "child_practices_houseofworship"                  
+# [368] "child_practices_classes"                         
+# [369] "child_practices_events_ownrelig"                 
+# [370] "child_practices_events_otherrelig"               
+# [371] "child_practices_comments"   
+# 
+# 
+# Q13.2
+# 
+# [372] "child_language1"                                 
+# [373] "child_language2"                                 
+# [374] "child_language3"                                 
+# [375] "child_language4"                                 
+# [376] "child_language5"                                 
+# [377] "child_language6"    
