@@ -1,0 +1,57 @@
+---
+title: "README"
+author: "Praveen Kenderla"
+date: "2025-05-04"
+output:
+    md_document:
+      variant: markdown_github
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, message=FALSE, include=FALSE}
+library(dplyr)
+library(fs)
+library(purrr)
+```
+
+
+## Structure of the project
+```{r, echo=FALSE, comment= NA}
+root_dir <- basename(here::here()) # get the root base name;
+
+#Capture output fn gives clean output without ## in output
+tree_structure <- capture.output({
+  #1. print root directory on top;
+  cat("=== ROOT:", root_dir, "===\n")
+  
+  #2. Read files in root;
+  dir_ls(recurse = F) %>%
+  walk( ~ {
+    #.2a. Check dir or not!;
+    if (is_dir(.x)) {
+      cat("\nSUB_TREE:", .x, "\n")
+      
+      #3a. If dir and have a name renv: print;
+      if (path_file(.x) == ('renv')) {
+        cat("renv\n------(contents removed)\n")
+      } else {
+        dir_tree(.x) # or else print the dir-tree of that directory folder;
+      }
+    }
+    else {
+      cat("-----", .x, "\n") #2b. Print the one that are not directories;
+    }
+  })
+})
+  
+# prints the cleaned output with separation with each line (\n);
+cat(tree_structure, sep = "\n")
+```
+
+
