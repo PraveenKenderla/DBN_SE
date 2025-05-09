@@ -21,10 +21,6 @@ ___
 ```c
     === ROOT: DBN_SE === 🏠
 
-    SUB_TREE: data --------------📁EMPTY (private data)
-    data
-    ├── processed
-    └── raw
     ----- DBN_SE.Rproj 
 
     SUB_TREE: documents ---------📁raw data file naming information
