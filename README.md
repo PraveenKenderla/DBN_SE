@@ -84,4 +84,3 @@ ___
 - Screenshot of final output of the data cleaning file:
   - Variable name: **_df_child_analysis_**:
     - View: head and tail: 
-     ![Alt text](/documents/df_child_analysis_headTrail_screenshot.png?raw=true, "screenshot of final df_child_analysis df head and tail view")
